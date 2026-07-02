@@ -1,0 +1,294 @@
+name: Build Video Index
+
+on:
+  schedule:
+    - cron: '45 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scrape sitemaps and hydrate thumbnails
+        run: |
+          node --max-old-space-size=4096 << 'EOF'
+          const https = require('https');
+          const fs = require('fs');
+
+          const MAX_THUMBS_PER_RUN = 1000;
+          const MAX_DATE_CORRECTIONS = 500;
+          const MAX_DESC_BACKFILL = 500;
+          const BATCH_SIZE = 5;
+
+          function get(url) {
+            return new Promise((resolve, reject) => {
+              const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
+                if (res.statusCode === 301 || res.statusCode === 302) {
+                  return get(res.headers.location).then(resolve).catch(reject);
+                }
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => resolve(data));
+              });
+              req.on('error', reject);
+              req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+            });
+          }
+
+          function extractOgImage(html) {
+            const metaRegex = /<meta[^>]+>/gi;
+            let match;
+            while ((match = metaRegex.exec(html)) !== null) {
+              const tag = match[0];
+              if (tag.includes('og:image') || tag.includes('twitter:image')) {
+                const content = tag.match(/content="([^"]+)"/);
+                if (content && !content[1].startsWith('data:')) return content[1];
+              }
+            }
+            return '';
+          }
+
+          function extractDate(html) {
+            const d3Match = html.match(/class="d3-o-media-object__date"[^>]*>\s*([^<]+?)\s*<\//);
+            if (d3Match) return d3Match[1].trim();
+
+            const ogMatch = html.match(/<meta[^>]+property="article:published_time"[^>]+content="([^"]+)"/);
+            if (ogMatch) return ogMatch[1];
+
+            const timeMatch = html.match(/<time[^>]+datetime="([^"]+)"/);
+            return timeMatch ? timeMatch[1] : '';
+          }
+
+          function extractDescription(html) {
+            const ogMatch = html.match(/<meta[^>]+property="og:description"[^>]+content="([^"]+)"/) ||
+                  html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:description"/);
+            if (ogMatch) return ogMatch[1];
+            const nameMatch = html.match(/<meta[^>]+name="description"[^>]+content="([^"]+)"/) ||
+                    html.match(/<meta[^>]+content="([^"]+)"[^>]+name="description"/);
+            return nameMatch ? nameMatch[1] : '';
+          }
+
+          async function main() {
+            let existing = new Map();
+            try {
+              const data = JSON.parse(fs.readFileSync('videos.json', 'utf8'));
+              data.forEach(v => { if (v.url) existing.set(v.url, v); });
+              console.log(`Loaded ${existing.size} existing videos`);
+            } catch (e) {
+              console.log('No existing videos.json, starting fresh');
+            }
+
+            // --- Cleanup: strip t_lazy from all existing thumb URLs ---
+            let cleanedCount = 0;
+            existing.forEach(v => {
+              if (v.thumb && /\/t_lazy\//i.test(v.thumb)) {
+                v.thumb = v.thumb.replace(/\/t_lazy\//gi, '/');
+                cleanedCount++;
+              }
+            });
+            if (cleanedCount > 0) console.log(`Stripped t_lazy from ${cleanedCount} existing thumbnails`);
+
+            // --- Cleanup: strip leading "video " from existing titles ---
+            let titleCleanedCount = 0;
+            existing.forEach(v => {
+              if (!v.title) return;
+              const cleaned = v.title
+                .replace(/^video\s+/i, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+              if (cleaned !== v.title) {
+                v.title = cleaned;
+                titleCleanedCount++;
+              }
+            });
+            if (titleCleanedCount > 0) console.log(`Cleaned titles for ${titleCleanedCount} existing videos`);
+
+            // --- Step 1: Scrape all sitemaps ---
+            const videos = new Map(existing);
+            const now = new Date();
+
+            for (let year = 2016; year <= now.getFullYear(); year++) {
+              for (let month = 1; month <= 12; month++) {
+                if (year === now.getFullYear() && month > now.getMonth() + 1) continue;
+
+                const url = `https://www.philadelphiaeagles.com/sitemap/html/videos/${year}/${month}`;
+                console.log(`Fetching ${url}`);
+
+                try {
+                  const html = await get(url);
+                  const linkRegex = /<a[^>]+href="([^"]*\/video\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+                  let match;
+                  while ((match = linkRegex.exec(html)) !== null) {
+                    const href = match[1];
+                    const title = match[2].replace(/<[^>]+>/g, '').trim();
+                    if (!href || !title) continue;
+
+                    const fullUrl = href.startsWith('http')
+                      ? href
+                      : `https://www.philadelphiaeagles.com${href}`;
+
+                    if (!videos.has(fullUrl)) {
+                      videos.set(fullUrl, { title, url: fullUrl, thumb: '', date: '', dateVerified: false });
+                    }else {
+                    // Always refresh title from sitemap so CMS edits are picked up nightly
+                    videos.get(fullUrl).title = title;
+                    }
+                  }
+                } catch (e) {
+                  console.warn(`Skipping ${url}: ${e.message}`);
+                }
+
+                await new Promise(r => setTimeout(r, 150));
+              }
+            }
+
+            // --- Manual overrides ---
+            const overrides = [
+              {
+                title: "Super Bowl LIX Highlights: Eagles 40, Chiefs 22",
+                url: "https://www.philadelphiaeagles.com/video/super-bowl-lix-highlights-eagles-40-chiefs-22",
+                thumb: "",
+                date: "",
+                dateVerified: false
+              }
+            ];
+            overrides.forEach(v => { if (!videos.has(v.url)) videos.set(v.url, v); });
+
+            // --- Step 2: Fetch thumbnails for videos that don't have one yet ---
+            const needsThumbs = Array.from(videos.values())
+              .filter(v => !v.thumb)
+              .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+              .slice(0, MAX_THUMBS_PER_RUN);
+
+            console.log(`Fetching thumbnails for ${needsThumbs.length} videos...`);
+
+            for (let i = 0; i < needsThumbs.length; i += BATCH_SIZE) {
+              const batch = needsThumbs.slice(i, i + BATCH_SIZE);
+              await Promise.all(batch.map(async video => {
+                try {
+                  const html = await get(video.url);
+                  const thumb = extractOgImage(html);
+                  const date = extractDate(html);
+                  const desc = extractDescription(html);
+                  if (thumb) video.thumb = thumb.replace(/\/t_lazy\//gi, '/');
+                  if (date) { video.date = date; video.dateVerified = true; }
+                  if (desc) video.desc = desc;
+                } catch (e) {
+                  console.warn(`No thumbnail: ${video.url}`);
+                }
+              }));
+              await new Promise(r => setTimeout(r, 200));
+              if (i % 100 === 0) console.log(`  ${i}/${needsThumbs.length} thumbnails processed`);
+            }
+
+            // --- Step 3: Correct dates for unverified videos (recent-first, capped) ---
+            const needsDateFix = Array.from(videos.values())
+              .filter(v => v.thumb && !v.dateVerified)
+              .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+              .slice(0, MAX_DATE_CORRECTIONS);
+
+            console.log(`Correcting dates for ${needsDateFix.length} videos...`);
+
+            for (let i = 0; i < needsDateFix.length; i += BATCH_SIZE) {
+              const batch = needsDateFix.slice(i, i + BATCH_SIZE);
+              await Promise.all(batch.map(async video => {
+                try {
+                  const html = await get(video.url);
+                  const date = extractDate(html);
+                  const desc = extractDescription(html);
+                  if (date) { video.date = date; video.dateVerified = true; }
+                  if (desc && !video.desc) video.desc = desc;
+                } catch (e) {
+                  console.warn(`Could not correct date: ${video.url}`);
+                }
+              }));
+              await new Promise(r => setTimeout(r, 200));
+            }
+
+            // --- Step 3b: Re-verify dates for recently-published videos (catches CMS date corrections) ---
+            const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+            const MONTH_MAP = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+
+            function isRecentVideo(video) {
+              const slug = (video.url.split('/video/')[1] || '').replace(/\/$/, '').toLowerCase();
+              const parts = slug.split('-');
+              for (let i = 0; i < parts.length - 2; i++) {
+                const month = MONTH_MAP[parts[i].slice(0, 3)];
+                if (month !== undefined) {
+                  const day = parseInt(parts[i + 1]);
+                  const year = parseInt(parts[i + 2]);
+                  if (day >= 1 && day <= 31 && year >= 2020) {
+                    return new Date(year, month, day).getTime() >= thirtyDaysAgo;
+                  }
+                }
+              }
+              // Fall back to stored date for videos without a date in the URL slug
+              if (video.date) {
+                const d = new Date(video.date);
+                if (!isNaN(d.getTime())) return d.getTime() >= thirtyDaysAgo;
+              }
+              return false;
+            }
+
+            const needsDateRefresh = Array.from(videos.values())
+              .filter(v => v.dateVerified && isRecentVideo(v));
+
+            console.log(`Re-verifying dates for ${needsDateRefresh.length} recent videos...`);
+
+            for (let i = 0; i < needsDateRefresh.length; i += BATCH_SIZE) {
+              const batch = needsDateRefresh.slice(i, i + BATCH_SIZE);
+              await Promise.all(batch.map(async video => {
+                try {
+                  const html = await get(video.url);
+                  const date = extractDate(html);
+                  const desc = extractDescription(html);
+                  if (date) video.date = date;
+                  if (desc) video.desc = desc;
+                } catch (e) {
+                  console.warn(`Could not re-verify date: ${video.url}`);
+                }
+              }));
+              await new Promise(r => setTimeout(r, 200));
+            }
+
+            // --- Step 4: Backfill descriptions for videos missing them ---
+            const needsDesc = Array.from(videos.values())
+              .filter(v => v.thumb && v.dateVerified && !v.desc)
+              .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+              .slice(0, MAX_DESC_BACKFILL);
+
+            console.log(`Backfilling descriptions for ${needsDesc.length} videos...`);
+
+            for (let i = 0; i < needsDesc.length; i += BATCH_SIZE) {
+              const batch = needsDesc.slice(i, i + BATCH_SIZE);
+              await Promise.all(batch.map(async video => {
+                try {
+                  const html = await get(video.url);
+                  const desc = extractDescription(html);
+                  if (desc) video.desc = desc;
+                } catch (e) {
+                  console.warn(`Could not fetch desc: ${video.url}`);
+                }
+              }));
+              await new Promise(r => setTimeout(r, 200));
+            }
+
+            const arr = Array.from(videos.values());
+            fs.writeFileSync('videos.json', JSON.stringify(arr));
+            console.log(`Done — ${arr.length} videos written to videos.json`);
+          }
+
+          main().catch(err => { console.error(err); process.exit(1); });
+          EOF
+
+      - name: Commit and push videos.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add videos.json
+          git diff --staged --quiet || (git commit -m "chore: update video index [skip ci]" && git push)

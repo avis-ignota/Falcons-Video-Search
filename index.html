@@ -1,0 +1,1079 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Search</title>
+
+  <!-- STEP 1: Preload your hero image for faster load. Replace this URL with your own. -->
+  <link rel="preload" as="image" href="YOUR_HERO_IMAGE_URL_HERE">
+
+  <!-- STEP 2: Replace the GA4 measurement ID with your own property ID. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=YOUR-GA4-ID"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'YOUR-GA4-ID');
+  </script>
+</head>
+
+<body style="font-family: Arial, Helvetica, sans-serif;">
+<div class="club-video-search-wrapper">
+  <div class="club-hero">
+
+    <!-- Optional: Remove or update this badge -->
+    <div class="club-hero-new-badge" aria-label="New feature">NEW</div>
+
+    <!-- STEP 3: Replace with your own hero/player image URL -->
+    <div class="club-hero-img-wrap">
+      <img src="YOUR_HERO_IMAGE_URL_HERE" alt="" aria-hidden="true" class="club-hero-img" fetchpriority="high" />
+    </div>
+
+    <div class="club-hero-content">
+      <div class="club-hero-title-row hero-anim">
+        <!-- STEP 4: Update heading text and team logo -->
+        <h2>Search your favorite [TEAM NAME] moments</h2>
+        <img src="YOUR_TEAM_LOGO_URL_HERE" alt="[TEAM NAME] Logo" class="club-hero-logo" />
+      </div>
+
+      <!-- STEP 5: Update the subtitle/hint text to match your team -->
+      <p class="hero-anim">For best results, pair a player with a specific moment: i.e. "[PLAYER NAME] [MOMENT]..."</p>
+
+      <div class="club-video-search hero-anim">
+        <input
+          type="text"
+          id="videoSearchInput"
+          placeholder="Search [TEAM NAME] Moments..."
+          aria-label="Search videos"
+          aria-controls="videoSearchResults"
+          aria-autocomplete="list"
+          autocomplete="off"
+        />
+        <button id="videoSearchClear" type="button" aria-label="Clear search" style="display: none;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true" focusable="false">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <button id="videoSearchBtn" type="button" aria-label="Search videos">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true" focusable="false">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <p id="video-search-pills-label" class="hero-anim">Popular Suggestions:</p>
+
+      <!-- STEP 6: Replace or add pills with your own popular search terms -->
+      <div class="video-search-pills" role="group" aria-labelledby="video-search-pills-label">
+        <button class="video-search-pill" type="button">Game Highlights</button>
+        <button class="video-search-pill" type="button">Press Conferences</button>
+        <button class="video-search-pill" type="button">Touchdowns</button>
+        <button class="video-search-pill" type="button">All-Access</button>
+        <button class="video-search-pill" type="button">Mic'd Up</button>
+        <button class="video-search-pill" type="button">Super Bowl</button>
+        <button class="video-search-pill" type="button">Hall of Fame</button>
+        <button class="video-search-pill" type="button">Interceptions</button>
+        <button class="video-search-pill" type="button">Sacks</button>
+        <!-- Add or remove pills as needed -->
+      </div>
+
+      <!-- STEP 7: Add refine-by sub-pills for any primary pill that warrants it.
+           See SECONDARY_PILLS in the JS below. Leave empty if not needed. -->
+      <div id="video-search-refine-bar" style="display:none;" role="group" aria-labelledby="video-search-refine-label">
+        <p id="video-search-refine-label">Refine by:</p>
+        <div class="video-search-refine-pills"></div>
+      </div>
+    </div>
+  </div>
+  <div id="videoSearchResults" class="video-search-results" aria-live="polite" aria-atomic="true" aria-label="Video search results"></div>
+</div>
+
+<style>
+  /* STEP 8: Replace the primary color (#004C54 = Eagles green) with your team's primary color throughout. */
+
+  .club-video-search-wrapper {
+    width: 100%;
+    max-width: 1400px;
+    margin: 8px auto 32px;
+    font-family: inherit, Arial, Helvetica, sans-serif !important;
+  }
+
+  .club-hero {
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    min-height: 460px;
+    border-radius: 16px;
+    position: relative;
+  }
+
+  .club-hero-new-badge {
+    font-family: inherit, Arial, Helvetica, sans-serif !important;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #d1e7dd; /* Update to match your brand */
+    color: #0a3622;      /* Update to match your brand */
+    font-size: 11px;
+    font-weight: 800;
+    padding: 6px 14px;
+    border-radius: 100px;
+    z-index: 10;
+  }
+
+  .club-hero-img-wrap {
+    width: 37%;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .club-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+  }
+
+  .club-hero-content {
+    flex: 1;
+    padding: 40px 48px 36px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* STEP 8 continued: Update this gradient to your team colors */
+    background: #004C54;
+    background: linear-gradient(90deg, rgba(0,76,84,1) 0%, rgba(1,55,59,1) 50%, rgb(3,48,50) 100%);
+  }
+
+  .club-hero-title-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+
+  .club-hero-title-row h2 {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .club-hero-logo {
+    height: 52px;
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .club-hero-content > p {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 15px;
+    margin: 0 0 14px 0;
+  }
+
+  @media (max-width: 767px) {
+    .club-hero-new-badge { display: none; }
+    .club-hero { flex-direction: column; min-height: unset; }
+    .club-hero-img-wrap { width: 100%; height: 240px; display: none; }
+    .club-hero-img { object-position: center 20%; }
+    .club-hero-content { padding: 20px 20px 28px; }
+    .club-hero-title-row { gap: 10px; }
+    .club-hero-title-row h2 { font-size: 26px; }
+    .club-hero-logo { height: 38px; }
+  }
+
+  .club-video-search {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 100px;
+    overflow: hidden;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.10);
+    border: 1px solid #e7e7e7;
+  }
+
+  #videoSearchInput {
+    flex: 1;
+    min-width: 0;
+    padding: 18px 20px;
+    font-size: 16px;
+    border: 0;
+    outline: none;
+    background: #fff;
+    color: #111;
+  }
+
+  #videoSearchInput:focus-visible {
+    outline: 2px solid #004c54; /* Update to your team color */
+    outline-offset: -2px;
+    border-radius: 100px 0 0 100px;
+  }
+
+  #videoSearchInput::placeholder { color: #7b7b7b; }
+
+  #videoSearchClear {
+    border: 0;
+    background: transparent;
+    color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0 4px 0 0;
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+  }
+
+  #videoSearchClear:hover { color: #333; }
+
+  #videoSearchBtn {
+    border: 0;
+    margin: 8px;
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #004c54; /* Update to your team color */
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  #videoSearchBtn:hover { background: #003940; } /* Update hover to your team color */
+
+  #video-search-pills-label {
+    margin-top: 20px !important;
+    font-weight: bold;
+  }
+
+  .video-search-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 0 4px;
+  }
+
+  .video-search-pill {
+    border: 1.5px solid #d0d0d0;
+    background: #fff;
+    color: #333;
+    font-size: 13.5px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .club-hero .video-search-pill:hover {
+    border-color: #fff;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+  }
+
+  .club-hero .video-search-pill.active {
+    border-color: #fff;
+    background: #fff;
+    color: #004c54; /* Update to your team color */
+  }
+
+  .club-hero .video-search-refine-pill:hover {
+    border-color: #fff;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+  }
+
+  .club-hero .video-search-refine-pill.active {
+    border-color: #fff;
+    background: #fff;
+    color: #004c54; /* Update to your team color */
+  }
+
+  #video-search-refine-bar {
+    margin-top: 6px;
+    animation: refine-fade-in 0.2s ease;
+  }
+
+  @keyframes refine-fade-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  #video-search-refine-bar p {
+    color: rgba(255,255,255,0.70);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 4px 0 5px 4px;
+  }
+
+  .video-search-refine-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 4px;
+  }
+
+  .video-search-refine-pill {
+    border: 1.5px solid #c0c0c0;
+    background: #fff;
+    color: #555;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .video-search-refine-pill.active {
+    border-color: #004c54; /* Update to your team color */
+    background: #004c54;  /* Update to your team color */
+    color: #fff;
+  }
+
+  .video-search-results {
+    display: none;
+    margin-top: 16px;
+    background: #fff;
+    border: 1px solid #e7e7e7;
+    border-radius: 16px;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+
+  .video-search-results-inner { padding: 8px 0; }
+
+  .video-search-result-count {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #383838;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background-color: #d6d6d641;
+    max-width: 180px;
+    text-align: center;
+    border-radius: 100px;
+    border: #383838 1px solid;
+    margin: 6px 12px;
+  }
+
+  .video-search-section-label {
+    padding: 14px 20px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #004c54; /* Update to your team color */
+  }
+
+  .video-search-divider {
+    margin: 8px 20px 4px;
+    border: 0;
+    border-top: 1px solid #d9d9d9;
+    border-radius: 100px;
+  }
+
+  .video-search-show-more-wrap { padding: 12px 20px 16px; }
+
+  .video-search-show-more {
+    width: 100%;
+    border: 1.5px solid #004c54; /* Update to your team color */
+    background: transparent;
+    color: #004c54;              /* Update to your team color */
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+
+  .video-search-show-more:hover {
+    background: #004c54; /* Update to your team color */
+    color: #fff;
+  }
+
+  @keyframes result-fade-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .video-search-result-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 14px 20px;
+    text-decoration: none;
+    color: #111;
+    transition: background 0.18s ease;
+    animation: result-fade-up 0.35s ease both;
+  }
+
+  .video-search-result-item:hover { background: #f7f7f7; }
+
+  .video-search-thumb {
+    width: 200px;
+    min-width: 200px;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #d9d9d9;
+  }
+
+  .video-search-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+
+  .video-search-thumb-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #004c54, #0f6a73); /* Update to your team colors */
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .video-search-content { min-width: 0; flex: 1; padding-top: 2px; }
+
+  .video-search-title {
+    font-size: 17px;
+    line-height: 1.35;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 6px;
+  }
+
+  .video-search-meta {
+    font-size: 11px;
+    color: #fff;
+    border-radius: 100px;
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #004c54; /* Update to your team color */
+    margin-bottom: 6px;
+  }
+
+  .video-search-url {
+    font-size: 13px;
+    color: #004c54; /* Update to your team color */
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .video-search-empty,
+  .video-search-loading {
+    padding: 18px 20px;
+    font-size: 15px;
+    color: #666;
+  }
+
+  .video-search-highlight {
+    background: rgba(0,76,84,0.21); /* Update to your team color (low opacity) */
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+
+  @media (max-width: 787px) {
+    .club-video-search { border-radius: 100px; height: 40px; }
+    #videoSearchInput { padding: 16px; font-size: 16px; }
+    #videoSearchBtn { width: 24px; min-width: 24px; height: 24px; }
+    .video-search-result-item { gap: 12px; padding: 14px 16px; }
+    .video-search-thumb { width: 140px; min-width: 140px; }
+    .video-search-title { font-size: 15px; }
+  }
+
+  /* Hero entrance animations */
+  @keyframes hero-fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-anim { animation: hero-fade-up 0.5s ease both; }
+  .club-hero-title-row.hero-anim   { animation-delay: 0.15s; }
+  .club-hero-content > p.hero-anim { animation-delay: 0.25s; }
+  .club-video-search.hero-anim     { animation-delay: 0.35s; }
+  #video-search-pills-label.hero-anim { animation-delay: 0.45s; }
+
+  .video-search-pills .video-search-pill { animation: hero-fade-up 0.4s ease both; }
+  .video-search-pills .video-search-pill:nth-child(1)  { animation-delay: 0.50s; }
+  .video-search-pills .video-search-pill:nth-child(2)  { animation-delay: 0.56s; }
+  .video-search-pills .video-search-pill:nth-child(3)  { animation-delay: 0.62s; }
+  .video-search-pills .video-search-pill:nth-child(4)  { animation-delay: 0.68s; }
+  .video-search-pills .video-search-pill:nth-child(5)  { animation-delay: 0.74s; }
+  .video-search-pills .video-search-pill:nth-child(6)  { animation-delay: 0.80s; }
+  .video-search-pills .video-search-pill:nth-child(7)  { animation-delay: 0.86s; }
+  .video-search-pills .video-search-pill:nth-child(8)  { animation-delay: 0.92s; }
+  .video-search-pills .video-search-pill:nth-child(9)  { animation-delay: 0.98s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById("videoSearchInput");
+  const button = document.getElementById("videoSearchBtn");
+  const clearBtn = document.getElementById("videoSearchClear");
+  const resultsBox = document.getElementById("videoSearchResults");
+
+  // --- State ---
+  let allVideos = [];
+  let debounceTimer = null;
+  let dataReady = false;
+  let lastMatches = [];
+  let lastQuery = '';
+  let moreVideosShown = 6;
+  let activePrimaryPill = null;
+  let activeSecondaryFilter = null;
+  let lastTrackedQuery = '';
+  let gaDebounceTimer = null;
+
+  // STEP 9: Point this to your own GitHub Pages JSON URL.
+  // Format: https://YOUR-ORG.github.io/YOUR-REPO/videos.json
+  const VIDEO_INDEX_URL = "https://YOUR-ORG.github.io/YOUR-REPO/videos.json";
+
+  // STEP 10: Update SECONDARY_PILLS with your own pill labels and refine options.
+  // Remove this block entirely if you don't want refine-by sub-pills.
+  const SECONDARY_PILLS = {
+    // "Super Bowl": ["Moment 1", "Moment 2"],
+    // "Mic'd Up":   ["Player 1 Mic'd Up", "Player 2 Mic'd Up"],
+  };
+
+  // STEP 11: Update the "no results" message with your team's contact/YouTube links.
+  const NO_RESULTS_HTML = `<div class="video-search-empty" role="status">
+    No video results found. Try searching on our
+    <a href="https://www.youtube.com/YOUR-CHANNEL" style="color:#004c54;text-decoration:underline;">YouTube Channel</a>.
+  </div>`;
+
+  // --- Text Utilities (no changes needed below this line) ---
+
+  const _normCache = new Map();
+  function normalizeText(str) {
+    if (!str) return "";
+    if (_normCache.has(str)) return _normCache.get(str);
+    const result = str.toLowerCase().replace(/&amp;/g, "and").replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
+    _normCache.set(str, result);
+    return result;
+  }
+
+  function escapeHtml(str) {
+    return (str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+  }
+
+  function formatDate(dateString) {
+    if (!dateString) return "";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  const MONTH_NAMES = {january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
+  function getTimestamp(dateString, url) {
+    if (url) {
+      const slug = (url.split('/video/')[1] || '').replace(/\/$/, '');
+      const parts = slug.split('-');
+      for (let i = 0; i < parts.length - 2; i++) {
+        const month = MONTH_NAMES[parts[i]];
+        if (month !== undefined) {
+          const day = parseInt(parts[i + 1]);
+          const year = parseInt(parts[i + 2]);
+          if (day >= 1 && day <= 31 && year >= 2010 && year <= 2030) return new Date(year, month, day).getTime();
+        }
+      }
+      const yearMatch = slug.match(/\b(20[12]\d)\b/);
+      if (yearMatch) return new Date(parseInt(yearMatch[1]), 6, 1).getTime();
+    }
+    if (dateString) { const d = new Date(dateString); if (!isNaN(d.getTime())) return d.getTime(); }
+    return 0;
+  }
+
+  function makeAbsoluteUrl(url) {
+    if (!url) return "";
+    try { return new URL(url, window.location.origin).href; } catch (e) { return url; }
+  }
+
+  function highlightMatch(text, query) {
+    if (!text || !query?.trim()) return escapeHtml(text || "");
+    const escapedText = escapeHtml(text);
+    const safeQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return escapedText.replace(new RegExp(`(${safeQuery})`, "ig"), '<span class="video-search-highlight">$1</span>');
+  }
+
+  // --- Fuzzy Matching ---
+
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    const matrix = Array.from({ length: b.length + 1 }, () => []);
+    for (let i = 0; i <= b.length; i++) matrix[i][0] = i;
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        const cost = b.charAt(i - 1) === a.charAt(j - 1) ? 0 : 1;
+        matrix[i][j] = Math.min(matrix[i-1][j]+1, matrix[i][j-1]+1, matrix[i-1][j-1]+cost);
+      }
+    }
+    return matrix[b.length][a.length];
+  }
+
+  function stemWord(word) {
+    if (word.length <= 4) return word;
+    if (word.endsWith('ing') && word.length > 6) { const b = word.slice(0,-3); return /([^aeiou])\1$/.test(b) ? b.slice(0,-1) : b; }
+    if (word.endsWith('ed') && word.length > 5)  { const b = word.slice(0,-2); return /([^aeiou])\1$/.test(b) ? b.slice(0,-1) : b; }
+    if (word.endsWith('er') && word.length > 5) return word.slice(0,-2);
+    if (word.endsWith('es') && word.length > 4) return word.slice(0,-2);
+    if (word.endsWith('s')  && word.length > 4 && !word.endsWith('ss')) return word.slice(0,-1);
+    return word;
+  }
+
+  // Generic football synonyms — add your own team-specific terms as needed
+  const SYNONYMS = {
+    td:           ['touchdown', 'touchdowns'],
+    touchdown:    ['td', 'tds', 'touchdowns'],
+    touchdowns:   ['td', 'tds', 'touchdown'],
+    pick:         ['interception', 'intercepted'],
+    interception: ['pick', 'picks'],
+    sack:         ['sacks', 'sacked'],
+    fumble:       ['fumbles', 'fumbled', 'strip'],
+    catch:        ['catches', 'caught', 'reception', 'receptions'],
+    reception:    ['catch', 'catches', 'caught'],
+    run:          ['rush', 'rushing', 'rushes'],
+    rush:         ['run', 'runs', 'rushing'],
+    pass:         ['throw', 'throws', 'passing'],
+    passing:      ['pass', 'passes', 'throw'],
+    highlight:    ['highlights'],
+    highlights:   ['highlight'],
+  };
+
+  function fuzzyIncludes(title, query, desc) {
+    const titleNorm = normalizeText(title);
+    const descNorm  = normalizeText(desc || '');
+    const queryNorm = normalizeText(query);
+    if (!titleNorm || !queryNorm) return false;
+
+    function matchesSource(sourceWords) {
+      return queryNorm.split(" ").every(qw => {
+        const stem = stemWord(qw);
+        const candidates = [...new Set([qw, stem, ...(SYNONYMS[qw] || [])])];
+        if (qw.length <= 2) return sourceWords.some(tw => tw === qw || tw.startsWith(qw));
+        const wordMatch = candidates.some(word =>
+          sourceWords.some(tw => {
+            if (tw.includes(word) || (tw.length > word.length / 2 && word.includes(tw))) return true;
+            if (word.length < 4 || Math.abs(tw.length - word.length) > 2) return false;
+            const dist = levenshtein(tw, word);
+            return dist <= 1 || (word.length >= 6 && dist <= 2);
+          })
+        );
+        if (wordMatch) return true;
+        const bigrams = sourceWords.slice(0,-1).map((w,i) => w + sourceWords[i+1]);
+        return candidates.some(word => bigrams.some(b => b.includes(word)));
+      });
+    }
+
+    if (matchesSource(titleNorm.split(" "))) return true;
+    if (!descNorm) return false;
+    return queryNorm.split(" ").every(qw => {
+      const candidates = [...new Set([qw, stemWord(qw), ...(SYNONYMS[qw] || [])])];
+      return candidates.some(word => descNorm.includes(word));
+    });
+  }
+
+  function scoreVideo(video, query) {
+    const title = normalizeText(video.title);
+    const desc  = normalizeText(video.desc || '');
+    const queryNorm = normalizeText(query);
+    if (!queryNorm) return 0;
+
+    const words = queryNorm.split(" ").filter(Boolean);
+    const titleWords = title.split(" ");
+    let _titleBigrams = null;
+    function getTitleBigrams() {
+      if (!_titleBigrams) _titleBigrams = titleWords.slice(0,-1).map((w,i) => w + titleWords[i+1]);
+      return _titleBigrams;
+    }
+    let score = 0;
+
+    if (title === queryNorm) score += 1000;
+    if (title.includes(queryNorm)) score += 160;
+    else if (desc && desc.includes(queryNorm)) score += 60;
+
+    function inTitle(w) { return title.includes(w) || getTitleBigrams().some(b => b.includes(w)); }
+    const allInTitle = words.every(w => inTitle(w) || (SYNONYMS[w] || []).some(s => inTitle(s)));
+    const allInDesc  = !allInTitle && desc && words.every(w => desc.includes(w) || (SYNONYMS[w] || []).some(s => desc.includes(s)));
+    if (allInTitle) score += 200;
+    else if (allInDesc) score += 40;
+
+    words.forEach(word => {
+      const synonyms = SYNONYMS[word] || [];
+      if (inTitle(word)) score += 20;
+      else if (synonyms.some(s => inTitle(s))) score += 10;
+      else if (desc && desc.includes(word)) score += 8;
+      else if (desc && synonyms.some(s => desc.includes(s))) score += 4;
+      else {
+        titleWords.forEach(tw => {
+          if (Math.abs(tw.length - word.length) > 2) return;
+          const dist = levenshtein(tw, word);
+          if (dist === 1) score += 8;
+          if (word.length >= 6 && dist === 2) score += 4;
+        });
+      }
+    });
+
+    if (score < 200) {
+      const allFuzzy = words.every(word => {
+        const candidates = [...new Set([word, stemWord(word), ...(SYNONYMS[word] || [])])];
+        return titleWords.some(tw => candidates.some(c => {
+          if (tw.includes(c) || c.includes(tw)) return true;
+          if (Math.abs(tw.length - c.length) > 2) return false;
+          const dist = levenshtein(tw, c);
+          return dist <= 1 || (c.length >= 6 && dist <= 2);
+        }));
+      });
+      if (allFuzzy) score += 200;
+    }
+
+    const hasTitleMatch = words.some(w => inTitle(w) || (SYNONYMS[w] || []).some(s => inTitle(s)));
+    const recencyFactor = hasTitleMatch ? 1 : 0.25;
+    const ts = getTimestamp(null, video.url);
+    if (ts) {
+      const daysOld = (Date.now() - ts) / (1000 * 60 * 60 * 24);
+      if      (daysOld <= 7)   score += 500 * recencyFactor;
+      else if (daysOld <= 30)  score += 400 * recencyFactor;
+      else if (daysOld <= 90)  score += 300 * recencyFactor;
+      else if (daysOld <= 180) score += 200 * recencyFactor;
+      else if (daysOld <= 365) score += 100 * recencyFactor;
+      else if (daysOld <= 730) score += 50  * recencyFactor;
+    }
+
+    return score;
+  }
+
+  // --- Thumbnail & Date Extraction ---
+
+  function getBestImageFromImg(img) {
+    if (!img) return "";
+    for (const attr of ["src","data-src","data-lazy","data-image","data-original"]) {
+      const val = img.getAttribute(attr);
+      if (val && !val.startsWith("data:")) return makeAbsoluteUrl(val);
+    }
+    const srcset = img.getAttribute("srcset") || img.getAttribute("data-srcset") || "";
+    if (srcset) { const first = srcset.split(",")[0].trim().split(" ")[0].trim(); if (first) return makeAbsoluteUrl(first); }
+    return "";
+  }
+
+  function getThumbnailFromLink(linkEl) {
+    const containers = [
+      linkEl.closest("article"), linkEl.closest("li"),
+      linkEl.closest(".d3-o-media-object"), linkEl.closest(".nfl-o-media-object"),
+      linkEl.closest(".media-item"), linkEl.closest(".video-item"),
+      linkEl.closest(".nfl-c-content-card"), linkEl.parentElement
+    ].filter(Boolean);
+    for (const container of containers) {
+      const thumb = getBestImageFromImg(container.querySelector("img"));
+      if (thumb) return thumb;
+    }
+    return "";
+  }
+
+  function getDateFromLink(linkEl) {
+    const card = linkEl.closest("article, .d3-o-media-object, .nfl-o-media-object, .media-item, li, .video-item, .nfl-c-content-card") || linkEl.parentElement;
+    if (!card) return "";
+    const timeEl = card.querySelector("time");
+    if (timeEl) return timeEl.getAttribute("datetime") || timeEl.textContent.trim();
+    const dateEl = card.querySelector(".time, .timestamp, .date, [class*='date']");
+    return dateEl ? dateEl.textContent.trim() : "";
+  }
+
+  // --- Data Loading ---
+
+  function decodeHtml(str) {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = str;
+    return txt.value;
+  }
+
+  function scrapeCurrentPage() {
+    return Array.from(document.querySelectorAll('a[href*="/video/"]'))
+      .map(link => {
+        const clone = link.cloneNode(true);
+        clone.querySelectorAll('time').forEach(t => t.remove());
+        const title = clone.textContent.trim().replace(/^video\s+/i,'').replace(/\s+/g,' ').trim();
+        const url = link.href;
+        if (!title || !url) return null;
+        let thumb = getThumbnailFromLink(link);
+        if (thumb) thumb = thumb.replace(/\/t_lazy\//gi, '/');
+        return { title, url, thumb, date: getDateFromLink(link) };
+      }).filter(Boolean);
+  }
+
+  function dedupeVideos(videos) {
+    const map = new Map();
+    videos.forEach(video => {
+      if (!video?.url) return;
+      if (!map.has(video.url)) { map.set(video.url, video); }
+      else {
+        const existing = map.get(video.url);
+        map.set(video.url, { ...existing, thumb: existing.thumb || video.thumb || "", date: existing.date || video.date || "", title: video.title || existing.title || "" });
+      }
+    });
+    return Array.from(map.values());
+  }
+
+  async function hydrateMissingThumbs(videos) {
+    let anyUpdated = false;
+    await Promise.all(
+      videos.filter(v => !v.thumb).slice(0, 8).map(async video => {
+        try {
+          const html = await fetch(video.url, { credentials: "same-origin" }).then(r => r.text());
+          const doc = new DOMParser().parseFromString(html, "text/html");
+          const metaImage =
+            doc.querySelector('meta[property="og:image"]')?.getAttribute("content") ||
+            doc.querySelector('meta[name="twitter:image"]')?.getAttribute("content") || "";
+          const thumb = metaImage || getBestImageFromImg(doc.querySelector("img")) || "";
+          if (thumb) { video.thumb = makeAbsoluteUrl(thumb).replace(/\/t_lazy\//gi, '/'); anyUpdated = true; }
+          const timeValue = doc.querySelector("time")?.getAttribute("datetime") || doc.querySelector("time")?.textContent?.trim() || "";
+          if (timeValue) video.date = timeValue;
+        } catch (e) { console.warn("Could not hydrate:", video.url, e); }
+      })
+    );
+    return anyUpdated;
+  }
+
+  // --- Search Logic ---
+
+  // STEP 12: Add any category-level slug patterns from your site to this blocklist
+  // so they don't appear as individual video results.
+  const CATEGORY_SLUGS = new Set(["highlights", "all-access", "presspass"]);
+
+  function isIndividualVideo(url) {
+    try {
+      const slug = (new URL(url).pathname.split("/video/")[1] || "").replace(/\/$/, "");
+      if (CATEGORY_SLUGS.has(slug)) return false;
+      return (slug.match(/-/g) || []).length >= 3;
+    } catch (e) { return true; }
+  }
+
+  function getCombinedResults(query) {
+    return allVideos
+      .filter(video => isIndividualVideo(video.url) && fuzzyIncludes(video.title, query, video.desc))
+      .map(video => ({ ...video, score: scoreVideo(video, query) }))
+      .filter(video => video.score >= 200)
+      .sort((a, b) => b.score !== a.score ? b.score - a.score : getTimestamp(b.date, b.url) - getTimestamp(a.date, a.url));
+  }
+
+  function renderResults(items, query) {
+    if (!query.trim()) { resultsBox.style.display = "none"; resultsBox.innerHTML = ""; return; }
+    if (!items.length) { resultsBox.innerHTML = NO_RESULTS_HTML; resultsBox.style.display = "block"; return; }
+
+    const topResults   = items.slice(0, 3);
+    const allOther     = items.slice(3).sort((a, b) => getTimestamp(b.date, b.url) - getTimestamp(a.date, a.url));
+    const otherResults = allOther.slice(0, moreVideosShown);
+    const hasMore      = allOther.length > moreVideosShown;
+
+    const renderCard = (video, index) => {
+      const thumbHtml = video.thumb
+        ? `<div class="video-search-thumb"><img src="${escapeHtml(video.thumb)}" alt="${escapeHtml(video.title)} thumbnail" loading="lazy" onerror="this.closest('.video-search-thumb').innerHTML='<div class=&quot;video-search-thumb-fallback&quot;>Video</div>';"></div>`
+        : `<div class="video-search-thumb"><div class="video-search-thumb-fallback">Video</div></div>`;
+      const meta  = formatDate(video.date) || "Video";
+      const delay = (index * 0.06).toFixed(2);
+      return `
+        <a class="video-search-result-item" href="${escapeHtml(video.url)}" style="animation-delay:${delay}s">
+          ${thumbHtml}
+          <div class="video-search-content">
+            <div class="video-search-title">${highlightMatch(video.title, query)}</div>
+            <div class="video-search-meta">${escapeHtml(meta)}</div>
+            <div class="video-search-url">${escapeHtml(video.url)}</div>
+          </div>
+        </a>`;
+    };
+
+    const totalCount = items.length;
+    let html = '<div class="video-search-results-inner">';
+    html += `<div class="video-search-result-count" role="status">${totalCount} result${totalCount !== 1 ? 's' : ''} found</div>`;
+    if (topResults.length) html += '<div class="video-search-section-label">Top Results 🔥</div>' + topResults.map((v,i) => renderCard(v,i)).join("");
+    if (otherResults.length) {
+      html += `<hr class="video-search-divider" role="presentation"><div class="video-search-section-label">More Videos</div>`;
+      html += otherResults.map((v,i) => renderCard(v, i + topResults.length)).join("");
+      if (hasMore) html += `<div class="video-search-show-more-wrap"><button class="video-search-show-more" type="button">Show More Results</button></div>`;
+    }
+    html += "</div>";
+    resultsBox.innerHTML = html;
+    resultsBox.style.display = "block";
+
+    const showMoreBtn = resultsBox.querySelector(".video-search-show-more");
+    if (showMoreBtn) showMoreBtn.addEventListener("click", function(e) { e.stopPropagation(); moreVideosShown += 15; renderResults(lastMatches, lastQuery); });
+  }
+
+  async function initVideos() {
+    try {
+      const json = await fetch(VIDEO_INDEX_URL + '?v=' + Date.now()).then(r => r.json());
+      json.forEach(v => {
+        if (v.title) v.title = decodeHtml(v.title).replace(/^video\s+/i,'').replace(/\s+/g,' ').trim();
+        if (v.thumb) v.thumb = v.thumb.replace(/\/t_lazy\//gi, '/');
+        if (v.desc)  v.desc  = decodeHtml(v.desc);
+      });
+      const currentVideos = scrapeCurrentPage();
+      allVideos = dedupeVideos([...currentVideos, ...json]);
+      console.log(`Video index loaded: ${allVideos.length} videos`);
+    } catch (e) {
+      console.error("Failed to load video index:", e);
+      allVideos = scrapeCurrentPage();
+    }
+    dataReady = true;
+  }
+
+  async function runSearch(shouldScroll = false, shouldTrack = false) {
+    const query = input.value.trim();
+    if (!query) { renderResults([], ""); return; }
+    if (!dataReady) {
+      resultsBox.innerHTML = '<div class="video-search-loading" role="status">Loading video search…</div>';
+      resultsBox.style.display = "block";
+      return;
+    }
+    moreVideosShown = 6;
+    const matches = getCombinedResults(query);
+    lastMatches = matches;
+    lastQuery = query;
+    if (shouldTrack && typeof gtag === 'function' && query !== lastTrackedQuery) {
+      gtag('event', 'video_search', { search_term: query });
+      lastTrackedQuery = query;
+    }
+    renderResults(matches, query);
+    if (shouldScroll && matches.length) {
+      const offset = 122; // Adjust this pixel offset to match your site's sticky nav height
+      const top = resultsBox.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+    const thumbsUpdated = await hydrateMissingThumbs(matches.slice(0, 18));
+    if (thumbsUpdated) renderResults(matches, query);
+  }
+
+  // --- Refine Bar ---
+
+  function showRefineBar(primaryLabel) {
+    const refineBar = document.getElementById("video-search-refine-bar");
+    const refinePillsEl = refineBar.querySelector(".video-search-refine-pills");
+    const options = SECONDARY_PILLS[primaryLabel];
+    if (!options || !options.length) { hideRefineBar(); return; }
+    refinePillsEl.innerHTML = options.map(label =>
+      `<button class="video-search-refine-pill" type="button" aria-pressed="false">${escapeHtml(label)}</button>`
+    ).join("");
+    refinePillsEl.querySelectorAll(".video-search-refine-pill").forEach(pill => {
+      pill.addEventListener("click", function () {
+        const isActive = pill.classList.contains("active");
+        refinePillsEl.querySelectorAll(".video-search-refine-pill").forEach(p => { p.classList.remove("active"); p.setAttribute("aria-pressed","false"); });
+        if (isActive) { activeSecondaryFilter = null; input.value = activePrimaryPill; }
+        else { pill.classList.add("active"); pill.setAttribute("aria-pressed","true"); activeSecondaryFilter = pill.textContent.trim(); input.value = activeSecondaryFilter; }
+        clearBtn.style.display = "flex";
+        clearTimeout(debounceTimer);
+        runSearch(true, true);
+      });
+    });
+    refineBar.style.display = "block";
+  }
+
+  function hideRefineBar() {
+    const refineBar = document.getElementById("video-search-refine-bar");
+    refineBar.style.display = "none";
+    refineBar.querySelector(".video-search-refine-pills").innerHTML = "";
+    activeSecondaryFilter = null;
+  }
+
+  // --- Event Listeners ---
+
+  input.addEventListener("input", function () {
+    clearBtn.style.display = input.value ? "flex" : "none";
+    if (activePrimaryPill) { document.querySelectorAll(".video-search-pill.active").forEach(p => p.classList.remove("active")); activePrimaryPill = null; hideRefineBar(); }
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(runSearch, 180);
+    clearTimeout(gaDebounceTimer);
+    gaDebounceTimer = setTimeout(function () {
+      const q = input.value.trim();
+      if (q && q !== lastTrackedQuery && typeof gtag === 'function') { gtag('event', 'video_search', { search_term: q }); lastTrackedQuery = q; }
+    }, 1500);
+  });
+
+  clearBtn.addEventListener("click", function () {
+    input.value = "";
+    clearBtn.style.display = "none";
+    clearTimeout(debounceTimer);
+    clearTimeout(gaDebounceTimer);
+    document.querySelectorAll(".video-search-pill.active").forEach(p => p.classList.remove("active"));
+    activePrimaryPill = null;
+    hideRefineBar();
+    renderResults([], "");
+    input.focus();
+  });
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); clearTimeout(debounceTimer); input.blur(); runSearch(true, true); }
+  });
+
+  button.addEventListener("click", function () { clearTimeout(debounceTimer); runSearch(true, true); });
+
+  document.querySelectorAll(".video-search-pill").forEach(pill => {
+    pill.addEventListener("click", function () {
+      const label = pill.textContent.trim();
+      if (activePrimaryPill === label) {
+        pill.classList.remove("active"); activePrimaryPill = null; hideRefineBar();
+        input.value = ""; clearBtn.style.display = "none"; renderResults([], ""); return;
+      }
+      document.querySelectorAll(".video-search-pill.active").forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      activePrimaryPill = label;
+      activeSecondaryFilter = null;
+      input.value = label;
+      clearBtn.style.display = "flex";
+      clearTimeout(debounceTimer);
+      showRefineBar(label);
+      const hasRefineOptions = SECONDARY_PILLS[label] && SECONDARY_PILLS[label].length;
+      runSearch(!hasRefineOptions, true);
+    });
+  });
+
+  resultsBox.addEventListener("click", function (e) {
+    const item = e.target.closest(".video-search-result-item");
+    if (!item || typeof gtag !== "function" || !lastQuery) return;
+    gtag("event", "video_click", {
+      search_term: lastQuery,
+      video_title: item.querySelector(".video-search-title")?.textContent?.trim() || "",
+      video_url:   item.href || ""
+    });
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { resultsBox.style.display = "none"; input.blur(); }
+  });
+
+  initVideos();
+});
+</script>
+</body>
+</html>
