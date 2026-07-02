@@ -115,8 +115,8 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    background: #d1e7dd; /* Update to match your brand */
-    color: #0a3622;      /* Update to match your brand */
+    background: #ffffff; /* Update to match your brand */
+    color: #A71930;      /* Update to match your brand */
     font-size: 11px;
     font-weight: 800;
     padding: 6px 14px;
@@ -145,7 +145,7 @@
     flex-direction: column;
     justify-content: center;
     /* STEP 8 continued: Update this gradient to your team colors */
-    background: #004C54;
+    background: #A71930;
     background: linear-gradient(90deg, rgba(0,76,84,1) 0%, rgba(1,55,59,1) 50%, rgb(3,48,50) 100%);
   }
 
@@ -210,7 +210,7 @@
   }
 
   #videoSearchInput:focus-visible {
-    outline: 2px solid #004c54; /* Update to your team color */
+    outline: 2px solid #A71930; /* Update to your team color */
     outline-offset: -2px;
     border-radius: 100px 0 0 100px;
   }
@@ -239,7 +239,7 @@
     min-width: 42px;
     height: 42px;
     border-radius: 50%;
-    background: #004c54; /* Update to your team color */
+    background: #A71930; /* Update to your team color */
     color: #fff;
     display: flex;
     align-items: center;
@@ -249,7 +249,7 @@
     flex-shrink: 0;
   }
 
-  #videoSearchBtn:hover { background: #003940; } /* Update hover to your team color */
+  #videoSearchBtn:hover { background: #bd2c44; } /* Update hover to your team color */
 
   #video-search-pills-label {
     margin-top: 20px !important;
@@ -286,7 +286,7 @@
   .club-hero .video-search-pill.active {
     border-color: #fff;
     background: #fff;
-    color: #004c54; /* Update to your team color */
+    color: #A71930; /* Update to your team color */
   }
 
   .club-hero .video-search-refine-pill:hover {
@@ -298,7 +298,7 @@
   .club-hero .video-search-refine-pill.active {
     border-color: #fff;
     background: #fff;
-    color: #004c54; /* Update to your team color */
+    color: #A71930; /* Update to your team color */
   }
 
   #video-search-refine-bar {
@@ -341,8 +341,8 @@
   }
 
   .video-search-refine-pill.active {
-    border-color: #004c54; /* Update to your team color */
-    background: #004c54;  /* Update to your team color */
+    border-color: #A71930; /* Update to your team color */
+    background: #A71930;  /* Update to your team color */
     color: #fff;
   }
 
@@ -378,7 +378,7 @@
     font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
-    color: #004c54; /* Update to your team color */
+    color: #A71930; /* Update to your team color */
   }
 
   .video-search-divider {
@@ -392,9 +392,9 @@
 
   .video-search-show-more {
     width: 100%;
-    border: 1.5px solid #004c54; /* Update to your team color */
+    border: 1.5px solid #A71930; /* Update to your team color */
     background: transparent;
-    color: #004c54;              /* Update to your team color */
+    color: #A71930;              /* Update to your team color */
     font-size: 13px;
     font-weight: 600;
     padding: 10px;
@@ -404,7 +404,7 @@
   }
 
   .video-search-show-more:hover {
-    background: #004c54; /* Update to your team color */
+    background: #A71930; /* Update to your team color */
     color: #fff;
   }
 
@@ -450,7 +450,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #004c54, #0f6a73); /* Update to your team colors */
+    background: linear-gradient(135deg, #A71930, #da203f); /* Update to your team colors */
     color: #fff;
     font-size: 12px;
     font-weight: 700;
@@ -474,13 +474,13 @@
     border-radius: 100px;
     display: inline-block;
     padding: 2px 8px;
-    background-color: #004c54; /* Update to your team color */
+    background-color: #A71930; /* Update to your team color */
     margin-bottom: 6px;
   }
 
   .video-search-url {
     font-size: 13px;
-    color: #004c54; /* Update to your team color */
+    color: #A71930; /* Update to your team color */
     line-height: 1.4;
     word-break: break-word;
   }
@@ -556,7 +556,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // STEP 9: Point this to your own GitHub Pages JSON URL.
   // Format: https://YOUR-ORG.github.io/YOUR-REPO/videos.json
-  const VIDEO_INDEX_URL = "https://YOUR-ORG.github.io/YOUR-REPO/videos.json";
+  const VIDEO_INDEX_URL = "https://avis-ignota.github.io/Falcons-Video-Search/videos.json";
 
   // STEP 10: Update SECONDARY_PILLS with your own pill labels and refine options.
   // Remove this block entirely if you don't want refine-by sub-pills.
@@ -568,7 +568,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // STEP 11: Update the "no results" message with your team's contact/YouTube links.
   const NO_RESULTS_HTML = `<div class="video-search-empty" role="status">
     No video results found. Try searching on our
-    <a href="https://www.youtube.com/YOUR-CHANNEL" style="color:#004c54;text-decoration:underline;">YouTube Channel</a>.
+    <a href="https://www.youtube.com/channel/UCzjCfV3LHyarKbdb-2ScGZg" style="color:#004c54;text-decoration:underline;">YouTube Channel</a>.
   </div>`;
 
   // --- Text Utilities (no changes needed below this line) ---
