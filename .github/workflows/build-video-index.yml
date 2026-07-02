@@ -116,7 +116,7 @@ jobs:
               for (let month = 1; month <= 12; month++) {
                 if (year === now.getFullYear() && month > now.getMonth() + 1) continue;
 
-                const url = `https://www.philadelphiaeagles.com/sitemap/html/videos/${year}/${month}`;
+                const url = `https://www.atlantafalcons.com/sitemap/html/videos/${year}/${month}`;
                 console.log(`Fetching ${url}`);
 
                 try {
@@ -130,7 +130,7 @@ jobs:
 
                     const fullUrl = href.startsWith('http')
                       ? href
-                      : `https://www.philadelphiaeagles.com${href}`;
+                      : `https://www.atlantafalcons.com${href}`;
 
                     if (!videos.has(fullUrl)) {
                       videos.set(fullUrl, { title, url: fullUrl, thumb: '', date: '', dateVerified: false });
